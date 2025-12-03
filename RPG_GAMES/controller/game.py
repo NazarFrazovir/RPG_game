@@ -43,6 +43,9 @@ class Game:
         # одразу включаємо музику меню
         self.play_menu_music()
 
+        self.doors_open = False
+
+
         # --- Меню та вступ ---
         self.menu = MainMenu(screen_w, screen_h)
         self.intro_screen = IntroScreen(screen_w, screen_h)
@@ -196,6 +199,8 @@ class Game:
     def start_new_game(self):
         """Скидаємо стати, відновлюємо монстрів і предмети."""
         self.stop_music()
+        self.doors_open = False
+        self.renderer.doors_open = False
         start_x, start_y = self.dungeon.find_player_start()
         self.player.x = start_x
         self.player.y = start_y
@@ -325,6 +330,8 @@ class Game:
             self.player.move(dx, dy, self.dungeon)
             # перевірка, чи наступив на предмет
             self.check_item_pickup()
+            #перевірка, чи наступив на двері
+            self.check_exit_tile()
 
     def handle_combat(self, enemy: Enemy):
         """Гравець атакує ворога, ворог (якщо живий) б'є у відповідь."""
@@ -384,6 +391,31 @@ class Game:
                     self.hud.add_message("Підібрано броню.")
                 else:
                     self.hud.add_message("Підібрано предмет.")
+
+    def check_exit_tile(self):
+        """Якщо гравець стоїть на 'E' і двері відкриті — перехід до наступної локації."""
+        x = self.player.x
+        y = self.player.y
+
+        # перевірка меж
+        if y < 0 or y >= self.dungeon.height:
+            return
+        if x < 0 or x >= self.dungeon.width:
+            return
+
+        ch = self.dungeon.level_data[y][x]
+
+        if ch != "E":
+            return
+
+        if not self.doors_open:
+            self.hud.add_message("Двері зачинені. Спочатку переможи всіх монстрів.")
+            return
+
+        # 🔹 Тут поки що просто повертаємось в меню
+        self.hud.add_message("Ти проходиш крізь двері в наступну локацію!")
+        self.go_to_menu()
+
 
     # ---------- ІНВЕНТАР ----------
     def toggle_inventory(self):
@@ -555,6 +587,19 @@ class Game:
             enemy.update()
 
         self.update_enemies_ai()
+        # 🔹 Якщо всі вороги мертві — відкриваємо двері
+        if not self.doors_open:
+            all_dead = True
+            for enemy in self.enemies:
+                if enemy.is_alive():
+                    all_dead = False
+                    break
+
+            if all_dead:
+                self.doors_open = True
+                self.renderer.doors_open = True
+                self.hud.add_message("Десь у підземеллі відчинилися двері...")
+
 
     def enemy_attack(self, enemy: Enemy):
         """Скелет б'є гравця, без зустрічного удару."""

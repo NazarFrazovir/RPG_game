@@ -139,8 +139,6 @@ class HUD:
         surface.blit(equip_surf, (x + 10, y + 55))
         surface.blit(armor_surf, (x + 10, y + 75))
 
-        # і список інвентарю тоді зрушити трохи нижче (start_y = y + 100)
-
 
         # список предметів
         start_y = y + 100

@@ -1,5 +1,3 @@
-# view/renderer.py
-
 import pygame
 import settings
 import os
@@ -64,6 +62,16 @@ class Renderer:
             ItemRarity.RARE: self.load_sprite("assets/armor_rare_32x32.png"),
             ItemRarity.LEGENDARY: self.load_sprite("assets/armor_legendary_32x32.png"),
         }
+
+        # тайлові спрайти
+        self.floor_image = self.load_sprite("assets/floor.png")
+        self.wall_image = self.load_sprite("assets/wall.png")
+        self.door_closed_image = self.load_sprite("assets/door_closed.png")
+        self.door_open_image = self.load_sprite("assets/door_open.png")
+
+        # стан дверей (оновлюється з Game)
+        self.doors_open = False
+
 
 
     # ---------- завантаження спрайтів ----------
@@ -174,19 +182,41 @@ class Renderer:
         self.screen.fill(self.COLOR_BG)
         tile = settings.TILE_SIZE
 
-        # ---- Малюємо карту ----
+        # ---- Малюємо карту тайлами ----
         for y, row in enumerate(self.dungeon.level_data):
             for x, ch in enumerate(row):
-                rect = pygame.Rect(
-                    self.offset_x + x * tile,
-                    self.offset_y + y * tile,
-                    tile,
-                    tile
-                )
-                if ch == "#":
-                    pygame.draw.rect(self.screen, self.COLOR_WALL, rect)
+                draw_x = self.offset_x + x * tile
+                draw_y = self.offset_y + y * tile
+
+                # 1) Спочатку — ПІДЛОГА майже всюди
+                if self.floor_image:
+                    self.screen.blit(self.floor_image, (draw_x, draw_y))
                 else:
-                    pygame.draw.rect(self.screen, self.COLOR_FLOOR, rect)
+                    floor_rect = pygame.Rect(draw_x, draw_y, tile, tile)
+                    pygame.draw.rect(self.screen, self.COLOR_FLOOR, floor_rect)
+
+                # 2) Поверх — стіни / двері / інші особливі тайли
+                if ch == "#":
+                    # стіна
+                    if self.wall_image:
+                        self.screen.blit(self.wall_image, (draw_x, draw_y))
+                    else:
+                        wall_rect = pygame.Rect(draw_x, draw_y, tile, tile)
+                        pygame.draw.rect(self.screen, self.COLOR_WALL, wall_rect)
+
+                elif ch == "E":
+                    # двері (вихід)
+                    img = self.door_open_image if self.doors_open else self.door_closed_image
+                    if img:
+                        self.screen.blit(img, (draw_x, draw_y))
+                    else:
+                        door_rect = pygame.Rect(draw_x, draw_y, tile, tile)
+                        color = (200, 150, 40) if self.doors_open else (100, 80, 30)
+                        pygame.draw.rect(self.screen, color, door_rect)
+
+                # інші символи (., P, M, H, A, W, R...) — підлога вже намальована, нічого не робимо
+
+
 
         # ---- Малюємо предмети ----
         for item in self.items:

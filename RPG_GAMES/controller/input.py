@@ -22,6 +22,10 @@ class InputHandler:
             game.toggle_inventory()
             return
 
+        if key == pygame.K_TAB:
+            game.toggle_inventory()
+            return
+
         # Якщо інвентар відкритий — працюємо тільки з ним
         if game.hud.show_inventory:
             if key in (pygame.K_UP, pygame.K_w):
